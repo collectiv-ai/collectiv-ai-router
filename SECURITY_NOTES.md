@@ -1,63 +1,56 @@
 # CollectiVAI Router – Security Notes
 
-This document summarises the main security assumptions and provides a
-checklist for running the CollectiVAI Router in a safe way.
+This document explains security assumptions and recommendations for the
+`collectiv-ai-router` project.
 
 ## 1. Secrets & API keys
 
-- All provider API keys **must** be stored as environment variables:
-  - `OPENAI_API_KEY`
-  - `GEMINI_API_KEY`
-  - `MISTRAL_API_KEY`
-  - `META_API_KEY`
-  - `DEEPSEEK_API_KEY`
-- The `.env` file is only for local development and should **never** be committed.
-- Do not log keys, full HTTP requests or full error messages from providers.
+- **Never** commit a real `.env` file to GitHub.
+- Store **all provider API keys** (OpenAI, Gemini, Mistral, Meta, DeepSeek, …)
+  in your deployment platform's secret storage (e.g. Cloudflare environment
+  variables, GitHub Actions secrets, etc.).
+- The file `.env.example` is only a template and MUST NOT contain real secrets.
 
-## 2. Router token
+If you accidentally pushed a real `.env` file to a public repo:
 
-- The router is protected by `COLLECTIVAI_ROUTER_TOKEN`:
-  - The app must send: `X-CollectivAI-Token: <token>`.
-  - If the env var is set, all requests without a matching token receive `401`.
-  - For development you can leave the env var empty to deactivate the check.
+1. **Immediately rotate** all affected API keys (OpenAI, Gemini, Mistral, …).
+2. Remove the file from the repo and commit history if possible.
+3. Add `.env` to `.gitignore` (already present in this template).
 
-## 3. No dynamic custom URLs
+## 2. Logging & data protection
 
-- The router does **not** accept arbitrary URLs or hosts from the client.
-- This prevents SSRF-style abuse (using the router to reach internal services).
-- If you later want to connect your own models, do it via a **server-side allowlist**.
+- Be careful not to log full prompts, answers or personal data.
+- Prefer structured, **minimal** logging:
+  - timestamp
+  - provider / model
+  - latency and status
+- If logs contain user data, treat them as confidential and store them securely.
 
-## 4. Cloudflare / Reverse Proxy
+## 3. CORS & origins
 
-When running behind Cloudflare or another reverse proxy, you should:
+- Restrict `ROUTER_ALLOWED_ORIGINS` to your real frontends  
+  (e.g. the CollectiVAI iOS/macOS app, website, or staging domains).
+- Do **not** use `*` in production.
 
-- Restrict allowed HTTP methods and paths, for example:
-  - `POST /api/chat`
-  - `GET /health`
-- Enable WAF / rules to block obvious attacks.
-- Add basic rate limiting for `/api/chat` (e.g. X requests per minute per IP).
+## 4. Rate limiting & abuse protection
 
-## 5. Logging
+In production you should add:
 
-- Log only:
-  - timestamps,
-  - provider/model used,
-  - high-level routing reasons,
-  - latency and status codes.
-- Avoid logging:
-  - full prompts,
-  - secrets,
-  - full provider error payloads from external APIs.
+- basic rate limiting (per IP / per API key),
+- request size limits,
+- simple anomaly detection (too many errors, too many tokens, etc.).
 
-## 6. Privacy
+These are not included in this minimal reference implementation.
 
-- The CollectiVAI App itself does not store API keys and does not send them.
-- All routing happens via this backend.
-- You can later add:
-  - prompt anonymisation,
-  - partial redaction,
-  - or per-user privacy settings in the backend.
+## 5. Custom providers
 
-This repository is intentionally conservative: it prefers safety and clarity
-over advanced features. Extend it carefully and review new features through
-a security lens every time.
+The `Custom` provider is a **placeholder**.  
+Only enable/implement it if you:
+
+- control the target backend, and
+- understand the security, logging and privacy implications.
+
+By default, the example implementation simply returns an error if selected.
+
+---
+© 2025 CollectiVAI – This file is non-confidential documentation.
