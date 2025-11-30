@@ -1,81 +1,37 @@
 <p align="center">
-  <img src="logo.png" alt="CollectiVAI Logo" width="380" />
+  <img src="logo.png" alt="CollectiVAI Logo" width="320" />
 </p>
 
 <h1 align="center">CollectiVAI Router</h1>
-<h3 align="center">Human-Centered AI Routing Layer for the CollectiVAI App</h3>
+<h3 align="center">Mini backend for democratic AI routing</h3>
 
 <p align="center">
   <a href="https://collectivai.org">
     <img src="https://img.shields.io/badge/Website-collectivai.org-003399?style=flat" alt="Website" />
   </a>
   <a href="https://github.com/collectiv-ai/collectiv-ai-app">
-    <img src="https://img.shields.io/badge/App-Prototype-ffcc00?style=flat" alt="CollectiVAI App" />
+    <img src="https://img.shields.io/badge/App-iOS%20%7C%20iPadOS%20%7C%20macOS-ffcc00?style=flat" alt="App" />
   </a>
-  <img src="https://img.shields.io/badge/Layer-Router-003399?style=flat" alt="Router Layer" />
-  <img src="https://img.shields.io/badge/Status-Early%20Design-999999?style=flat" alt="Status" />
+  <img src="https://img.shields.io/badge/Made%20in-Europe-003399?style=flat" alt="Made in Europe" />
 </p>
-
----
-
-> 🇬🇧 This repository documents the **routing layer** used by the  
-> **CollectiVAI App** (iOS / iPadOS / macOS).  
->
-> 🇩🇪 Dieses Repository beschreibt die **Routing-Schicht**,  
-> die von der **CollectiVAI-App** genutzt wird.
 
 ---
 
 ## 1. What is the CollectiVAI Router?
 
-The **CollectiVAI Router** is the backend layer behind the CollectiVAI app’s chat experience.
+The **CollectiVAI Router** is a small backend that powers the  
+**CollectiVAI App** (iOS / iPadOS / macOS, SwiftUI).
 
-Instead of talking directly to one model, the app sends every request to **one router endpoint**.  
-The router then decides:
+It receives a structured request from the app (mode, provider, topic, service profile, modelId),  
+decides **which AI backend to call**, and returns:
 
-- **which provider** to use  
-  (`OpenAI`, `Gemini`, `Mistral`, `Meta`, `DeepSeek`, or **Auto**)
-- **which model** to call for that provider  
-- **how to apply safety & ethics filters** based on:
-  - **Mode** (ethical / research / technical)
-  - **Topic** (democracy, climate, economy, security, research, health)
-  - **Service profile** (city services, universities, NGOs, citizen advisor, startups)
+- the final **reply text**
+- which **provider** and **model** were used
+- optional **routing metadata** (latency, filters, reasoning)
 
-The router is designed as a **human-centered control layer**:
-you can swap providers or keys on the backend without changing the app.
+In simple terms:
 
----
-
-## 2. Relationship to the CollectiVAI App
-
-The SwiftUI app talks to a single HTTP endpoint using this struct:
-
-```swift
-struct CollectivAIBackend {
-    static let endpoint =
-      URL(string: "https://collectivai-server.collectivai.workers.dev/api/chat")!
-
-    struct ChatRequest: Encodable {
-        let prompt: String
-        let mode: String
-        let provider: String
-        let topic: String
-        let modelId: String?
-        let serviceProfile: String?
-    }
-
-    struct RoutingInfo: Decodable {
-        let reason: String?
-        let filters: [String]?
-        let latencyMs: Int?
-    }
-
-    struct ChatResponse: Decodable {
-        let reply: String
-        let providerUsed: String
-        let model: String
-        let routingInfo: RoutingInfo?
-    }
-
-    // ...
-}
+```text
+CollectiVAI App  →  CollectiVAI Router  →  AI Providers (OpenAI, Gemini, Mistral, Meta, DeepSeek, local…)
+           ↑                                 ↓
+        Modes, topics, profiles          Reply + routingInfo
