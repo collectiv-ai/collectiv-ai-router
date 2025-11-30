@@ -1,9 +1,9 @@
 <p align="center">
-  <img src="logo.png" alt="CollectiVAI Logo" width="420" />
+  <img src="logo.png" alt="CollectiVAI Logo" width="400" />
 </p>
 
 <h1 align="center">CollectiVAI Router</h1>
-<h3 align="center">Multi‑provider AI routing backend for the CollectiVAI app</h3>
+<h3 align="center">Multi-provider AI routing backend for the CollectiVAI app</h3>
 
 <p align="center">
   <a href="https://collectivai.org">
@@ -17,11 +17,13 @@
 
 > **Status:** Prototype backend for the CollectiVAI app  
 > **Stack:** Python · FastAPI · httpx · Cloudflare (reverse proxy / Workers)  
-> **Security:** No API keys stored in the app – all secrets live in the router / platform.
+> **Security:** No API keys stored in the app – all secrets live in the router / platform.  
+> **Demo:** In this public repo, all providers return **mock / demo replies**.  
+> For real deployments, you must wire up the provider calls in `router/providers/`.
 
 ---
 
-## 🇬🇧 Overview
+## Overview
 
 The **CollectiVAI Router** is the backend that the **CollectiVAI iOS / iPadOS / macOS app**
 uses to send chat requests.
@@ -42,14 +44,14 @@ POST /api/chat
 
 …and then decides which model / provider to call:
 
-- **OpenAI** (e.g. GPT‑4.1, GPT‑4o mini)  
+- **OpenAI** (e.g. GPT-4.1, GPT-4o mini)  
 - **Gemini** (e.g. 2.0 Flash / Pro)  
 - **Mistral** (e.g. Mistral Small / Large)  
 - **Meta** (LLaMA models via a compatible endpoint)  
 - **DeepSeek** (chat / reasoner)  
 - (optional) **Custom** – your own backend (disabled by default)
 
-The router returns a **single, unified response** back to the app, including some
+The router returns a **single, unified response** back to the app, including
 routing metadata for the developer view:
 
 ```jsonc
@@ -58,7 +60,7 @@ routing metadata for the developer view:
   "providerUsed": "openai",
   "model": "gpt-4.1",
   "routingInfo": {
-    "reason": "Ethical mode + democracy topic → high‑reliability model.",
+    "reason": "Ethical mode + democracy topic → high-reliability model.",
     "filters": ["safety", "democracy"],
     "latencyMs": 850
   }
@@ -69,36 +71,17 @@ In production, this backend can be:
 
 - exposed via a **Cloudflare Worker / Tunnel** (e.g.  
   `https://collectivai-server.collectivai.workers.dev/api/chat`), and  
-- connected to the providers using **server‑side API keys**.
+- connected to the providers using **server-side API keys**.
 
-The **CollectiVAI App never stores API keys on device.**
+The **CollectiVAI app never stores API keys on device.**
 
----
-
-## 🇩🇪 Überblick
-
-Der **CollectiVAI Router** ist das Backend, mit dem die  
-**CollectiVAI App (iOS / iPadOS / macOS)** spricht.
-
-- Die App sendet Anfragen an `/api/chat` mit:
-  - `mode` (Ethical, Research, Technical),
-  - `topic` (Demokratie, Klima, Sicherheit, …),
-  - `provider` (Auto, OpenAI, Gemini, Mistral, Meta, DeepSeek),
-  - optional `modelId` und `serviceProfile`.
-- Der Router entscheidet, welcher Provider / welches Modell genutzt wird,
-  ruft die jeweilige API auf und gibt eine einheitliche Antwort zurück.
-- In der **Developer‑Ansicht** der App sieht man zusätzlich Routing‑Infos
-  (genutztes Modell, Provider, Latenz, Begründung).
-
-Die API‑Schlüssel liegen **nur im Router / in der Infrastruktur**  
-(z. B. Cloudflare‑Variablen), **nicht** in der App.
-
-Weitere Hinweise zur Sicherheit:  
-👉 [`SECURITY_NOTES.md`](SECURITY_NOTES.md)
+In this public repository the provider modules in `router/providers/` are
+intentionally implemented as **placeholders** that return short demo strings.
+This lets you develop and test the app integration without any real API calls.
 
 ---
 
-## 🧱 Folder structure
+## Folder structure
 
 Reference structure for this repository:
 
@@ -125,12 +108,9 @@ collectiv-ai-router/
       └─ custom_provider.py   # placeholder / optional
 ```
 
-Your current GitHub repo already contains some of these files; the rest can be
-added step‑by‑step.
-
 ---
 
-## 🚀 Local development
+## Local development
 
 ### 1. Clone & create virtualenv
 
@@ -140,7 +120,7 @@ cd collectiv-ai-router
 
 python3 -m venv .venv
 source .venv/bin/activate  # macOS / Linux
-# On Windows: .venv\Scripts\activate
+# On Windows: .venv\Scriptsctivate
 ```
 
 ### 2. Install dependencies
@@ -158,13 +138,17 @@ Create a local `.env` file based on the template:
 cp .env.example .env
 ```
 
-Edit `.env` and insert **test keys** (never production keys) for:
+Edit `.env` and (optionally) insert **test keys** (never production keys) for:
 
 - `OPENAI_API_KEY`
 - `GEMINI_API_KEY`
 - `MISTRAL_API_KEY`
 - `META_API_KEY`
 - `DEEPSEEK_API_KEY`
+
+In this public demo, the provider modules still return **mock replies**.
+Real keys become relevant once you replace the placeholders in
+`router/providers/*.py` with real API calls in your private deployment.
 
 ### 4. Run the dev server
 
@@ -174,7 +158,7 @@ uvicorn router.main:app --reload --port 8000
 
 The router is now available at:
 
-- `http://localhost:8000/health` → health‑check  
+- `http://localhost:8000/health` → health-check  
 - `http://localhost:8000/api/chat` → chat endpoint
 
 For local testing of the iOS/macOS app you can temporarily point the app’s
@@ -182,7 +166,7 @@ base URL to `http://localhost:8000/api/chat`.
 
 ---
 
-## 🌐 Production / Cloudflare
+## Production / Cloudflare
 
 In production you will typically:
 
@@ -191,6 +175,9 @@ In production you will typically:
    - reverse proxy / Tunnel (custom domain), or  
    - Worker that forwards to your backend.
 3. Store all **API keys as secrets** in Cloudflare or your hosting platform.
+4. Replace the placeholder implementations in `router/providers/`
+   with real HTTP calls to OpenAI, Gemini, Mistral, Meta, DeepSeek or your
+   custom backends.
 
 The concrete deployment setup is **not included** here, because it depends on
 your infrastructure (VM, Docker, Cloudflare, etc.).  
@@ -198,18 +185,20 @@ This repo focuses on the **router logic and security model**.
 
 ---
 
-## 🔐 Security model (short)
+## Security model (short)
+
+See also [`SECURITY_NOTES.md`](SECURITY_NOTES.md).
 
 - No API keys in the CollectiVAI app.  
 - No real secrets in this repository.  
 - `.env` is **ignored** by git (see `.gitignore`).  
 - `.env.example` is only a documentation template.  
 - Provider API keys are stored **only in your backend / platform**.  
-- Logging should be minimal and privacy‑friendly (see `SECURITY_NOTES.md`).
+- Logging should be minimal and privacy-friendly (no full prompts or PII).
 
 ---
 
-## 🧩 Relation to the CollectiVAI app
+## Relation to the CollectiVAI app
 
 The current CollectiVAI SwiftUI app expects the backend to:
 
@@ -229,9 +218,9 @@ are aligned with this contract.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-This is a **public, non‑confidential reference implementation**.
+This is a **public, non-confidential reference implementation**.
 
 If you want to:
 
@@ -245,12 +234,12 @@ Please avoid submitting any code that contains **real secrets, keys or tokens**.
 
 ---
 
-## ⚖️ License / Branding
+## License / Branding
 
 The router code and documentation in this repository may later be released
-under a permissive open‑source license. Until then, treat it as:
+under a permissive open-source license. Until then, treat it as:
 
-> **“Public, non‑confidential reference code – All rights reserved.”**
+> **“Public, non-confidential reference code – All rights reserved.”**
 
 The **CollectiVAI** name, logo and visual identity are protected.  
 See the central branding repository for details.
